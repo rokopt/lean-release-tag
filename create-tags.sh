@@ -6,11 +6,14 @@ set -euo pipefail
 TOOLCHAIN_PATH="${TOOLCHAIN_PATH:-lean-toolchain}"
 
 # The commits that touch the lean toolchain, oldest first.
+# We use `--first-parent` so that when a branch is merged with a merge commit, the merge commit
+# (i.e. the commit on the branch that we were pushed to) is tagged, rather than the commit on the
+# merged branch that originally made the change.
 # On the initial push to a new repo, BEFORE is the null SHA.
 if [[ "$BEFORE" == "0000000000000000000000000000000000000000" ]]; then
-  commits=$(git log --reverse --pretty=format:"%H" $AFTER -- "$TOOLCHAIN_PATH")
+  commits=$(git log --first-parent --reverse --pretty=format:"%H" $AFTER -- "$TOOLCHAIN_PATH")
 else
-  commits=$(git log --reverse --pretty=format:"%H" $BEFORE..$AFTER -- "$TOOLCHAIN_PATH")
+  commits=$(git log --first-parent --reverse --pretty=format:"%H" $BEFORE..$AFTER -- "$TOOLCHAIN_PATH")
 fi
 for commit in $commits; do
   # Get the toolchain that this PR switched to.
