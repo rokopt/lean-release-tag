@@ -23,6 +23,18 @@ inputs:
 runs:
   using: "composite"
   steps:
+    # Composite actions do not enforce `required: true`, so check the token explicitly: otherwise,
+    # the failure is a confusing error message about the `token` input of `actions/checkout`.
+    - name: Check inputs
+      run: |
+        if [[ -z "$GH_TOKEN" ]]; then
+          echo "::error::The GITHUB_TOKEN input is empty. If you set it to a secret, check that the secret exists and that its name is spelled correctly."
+          exit 1
+        fi
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.GITHUB_TOKEN }}
+
     - name: Checkout the repository
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       with:
