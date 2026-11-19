@@ -12,6 +12,10 @@ inputs:
     description: 'Commit hash of the most recent commit after the push. Unless you know what you are doing, you do not need to change this.'
     required: false
     default: ${{ github.event.after }}
+  toolchain-path:
+    description: 'Path of the `lean-toolchain` file, relative to the root of the repository. Default value: `lean-toolchain`.'
+    required: false
+    default: lean-toolchain
   do-release:
     description: 'Whether to create a GitHub release for the new tag. Allowed values: `true` and `false`. Default value: `false`.'
     required: false
@@ -33,4 +37,5 @@ runs:
         GH_TOKEN: ${{ inputs.GITHUB_TOKEN }}
         BEFORE: ${{ inputs.before }}
         AFTER: ${{ inputs.after }}
+        TOOLCHAIN_PATH: ${{ inputs.toolchain-path }}
         DO_RELEASE: ${{ inputs.do-release }}

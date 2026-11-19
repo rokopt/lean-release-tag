@@ -2,17 +2,20 @@
 
 set -euo pipefail
 
+# Path of the `lean-toolchain` file, relative to the repository root.
+TOOLCHAIN_PATH="${TOOLCHAIN_PATH:-lean-toolchain}"
+
 # The commits that touch the lean toolchain, oldest first.
 # On the initial push to a new repo, BEFORE is the null SHA.
 if [[ "$BEFORE" == "0000000000000000000000000000000000000000" ]]; then
-  commits=$(git log --reverse --pretty=format:"%H" $AFTER -- lean-toolchain)
+  commits=$(git log --reverse --pretty=format:"%H" $AFTER -- "$TOOLCHAIN_PATH")
 else
-  commits=$(git log --reverse --pretty=format:"%H" $BEFORE..$AFTER -- lean-toolchain)
+  commits=$(git log --reverse --pretty=format:"%H" $BEFORE..$AFTER -- "$TOOLCHAIN_PATH")
 fi
 for commit in $commits; do
   # Get the toolchain that this PR switched to.
-  toolchain=$(git show $commit:lean-toolchain) || {
-    echo "WARNING: Could not read lean-toolchain at commit $commit. Please avoid newlines or other special characters!"
+  toolchain=$(git show "$commit:$TOOLCHAIN_PATH") || {
+    echo "WARNING: Could not read $TOOLCHAIN_PATH at commit $commit. Please avoid newlines or other special characters!"
     continue
   }
   # Strip the repository prefix, so we just get the suffix.

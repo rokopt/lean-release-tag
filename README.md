@@ -30,6 +30,29 @@ jobs:
 
 ## Configuration
 
+### Inputs: `toolchain-path`
+
+The path of the `lean-toolchain` file, relative to the root of the repository. Default value: `lean-toolchain`.
+Set this if your Lean project lives in a subdirectory of the repository, and remember to update the `paths` filter of the workflow to match. For example:
+```yml
+on:
+  push:
+    branches:
+      - 'main'
+    paths:
+      - 'my-lean-project/lean-toolchain'
+
+jobs:
+  lean-release-tag:
+    # ...
+    steps:
+    - name: lean-release-tag action
+      uses: leanprover-community/lean-release-tag@v1
+      with:
+        toolchain-path: my-lean-project/lean-toolchain
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
 ### Inputs: `do-release`
 
 This determines whether to create a GitHub release for the new tag. Allowed values: `true` and `false`. Default value: `false`.
