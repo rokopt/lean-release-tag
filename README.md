@@ -66,6 +66,10 @@ This is the token used to access the GitHub API. The token is required to make r
 
 These are the commit hashes of the most recent commit before and after the push, respectively. Any new Lean versions between `before` (exclusive) and `after` (inclusive) will get a tag. If this action runs on `push` (as in the expected configuration), you do not need to set these.
 
+If `before` is empty (for example, when the workflow is triggered by `workflow_dispatch` instead of `push`), or refers to a commit that no longer exists (for example, after a force-push), the whole history up to `after` is scanned instead, and every Lean version that does not have a tag yet gets one.
+In particular, you can add `workflow_dispatch` to the triggers of the workflow, and run it manually to create tags for Lean versions that your project used before you enabled this action.
+If `after` is empty, the commit that the workflow runs on is used.
+
 ## Testing
 
 To semi-manually test this action, run the `test-me.sh` script. This will make some example commits to the repository. Please verify that the corresponding tags have been created correctly.

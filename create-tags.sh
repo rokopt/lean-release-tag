@@ -4,17 +4,44 @@ set -euo pipefail
 
 # Path of the `lean-toolchain` file, relative to the repository root.
 TOOLCHAIN_PATH="${TOOLCHAIN_PATH:-lean-toolchain}"
+BEFORE="${BEFORE:-}"
+AFTER="${AFTER:-}"
+
+# When the workflow is not triggered by `push` (e.g. `workflow_dispatch`), there is no `after`
+# commit: use whatever revision the repository is checked out at.
+if [[ -z "$AFTER" ]]; then
+  AFTER=HEAD
+fi
+
+# Determine the range of commits to scan.
+# If we cannot tell which commits are new, scan all of the history leading up to `AFTER`.
+# This is safe because we never create a tag that already exists, so only Lean versions that
+# have not been tagged yet are affected.
+if [[ -z "$BEFORE" ]]; then
+  # Not triggered by `push` (e.g. `workflow_dispatch`).
+  echo "INFO: No \`before\` commit given; scanning all history up to $AFTER."
+  range=("$AFTER")
+elif [[ "$BEFORE" =~ ^0+$ ]]; then
+  # On the initial push to a new repo (or branch), BEFORE is the null SHA.
+  echo "INFO: Initial push; scanning all history up to $AFTER."
+  range=("$AFTER")
+elif ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+  # After a force-push, the old commit is typically no longer reachable, so it is not in our clone.
+  echo "WARNING: \`before\` commit $BEFORE not found (force-push?); scanning all history up to $AFTER."
+  range=("$AFTER")
+else
+  range=("$BEFORE..$AFTER")
+fi
 
 # The commits that touch the lean toolchain, oldest first.
 # We use `--first-parent` so that when a branch is merged with a merge commit, the merge commit
 # (i.e. the commit on the branch that we were pushed to) is tagged, rather than the commit on the
 # merged branch that originally made the change.
-# On the initial push to a new repo, BEFORE is the null SHA.
-if [[ "$BEFORE" == "0000000000000000000000000000000000000000" ]]; then
-  commits=$(git log --first-parent --reverse --pretty=format:"%H" $AFTER -- "$TOOLCHAIN_PATH")
-else
-  commits=$(git log --first-parent --reverse --pretty=format:"%H" $BEFORE..$AFTER -- "$TOOLCHAIN_PATH")
+commits=$(git log --first-parent --reverse --pretty=format:"%H" "${range[@]}" -- "$TOOLCHAIN_PATH")
+if [[ -z "$commits" ]]; then
+  echo "INFO: No commits changing $TOOLCHAIN_PATH found."
 fi
+
 for commit in $commits; do
   # Get the toolchain that this PR switched to.
   toolchain=$(git show "$commit:$TOOLCHAIN_PATH") || {
