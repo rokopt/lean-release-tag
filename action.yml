@@ -2,7 +2,7 @@ name: 'Lean release tagging'
 description: 'Creates a Git tag whenever your project updates to a new Lean release.'
 inputs:
   GITHUB_TOKEN:
-    description: 'Token used to access the GitHub API. When in doubt, set this to the value of secrets.GITHUB_TOKEN.'
+    description: 'Token used to push tags and to access the GitHub API. When in doubt, set this to the value of secrets.GITHUB_TOKEN.'
     required: true
   before:
     description: 'Commit hash of the most recent commit before the push. Unless you know what you are doing, you do not need to change this.'
@@ -29,6 +29,8 @@ runs:
         # We set infinite fetch depth, for now, because we can't tell how many revisions are between
         # `before` and `after` before actually accessing the repo.
         fetch-depth: 0
+        # Use the given token, rather than the default `github.token`, to push the tags.
+        token: ${{ inputs.GITHUB_TOKEN }}
 
     - name: Run the script
       run: ${{ github.action_path }}/create-tags.sh

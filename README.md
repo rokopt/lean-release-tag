@@ -60,7 +60,9 @@ This determines whether to create a GitHub release for the new tag. Allowed valu
 
 ### Inputs: `GITHUB_TOKEN`
 
-This is the token used to access the GitHub API. The token is required to make releases. When in doubt, set this to the value of `secrets.GITHUB_TOKEN`.
+This is the token used to push the tags and to access the GitHub API. The token is required to make releases. When in doubt, set this to the value of `secrets.GITHUB_TOKEN`.
+
+GitHub refuses to let a token without the `workflows` permission push a tag on a commit whose files in `.github/workflows` differ from those on the default branch. This does not usually matter when tagging new commits, but it does when tagging older commits, for example when backfilling tags with `workflow_dispatch` (see below). `secrets.GITHUB_TOKEN` cannot be given the `workflows` permission, so in that case, use a [fine-grained personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token) with read and write access to "Contents" and "Workflows" of your repository instead, stored as a repository secret.
 
 ### Inputs: `before` and `after`
 
