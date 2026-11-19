@@ -6,6 +6,7 @@ set -euo pipefail
 TOOLCHAIN_PATH="${TOOLCHAIN_PATH:-lean-toolchain}"
 BEFORE="${BEFORE:-}"
 AFTER="${AFTER:-}"
+DO_RELEASE="${DO_RELEASE:-false}"
 
 # When the workflow is not triggered by `push` (e.g. `workflow_dispatch`), there is no `after`
 # commit: use whatever revision the repository is checked out at.
@@ -43,31 +44,35 @@ if [[ -z "$commits" ]]; then
 fi
 
 for commit in $commits; do
-  # Get the toolchain that this PR switched to.
+  # Get the toolchain that this commit switched to.
   toolchain=$(git show "$commit:$TOOLCHAIN_PATH") || {
-    echo "WARNING: Could not read $TOOLCHAIN_PATH at commit $commit. Please avoid newlines or other special characters!"
+    echo "WARNING: Could not read $TOOLCHAIN_PATH at commit $commit (was it deleted?); not tagging this commit."
     continue
   }
+  # Strip leading and trailing whitespace (including any carriage returns).
+  toolchain="${toolchain#"${toolchain%%[![:space:]]*}"}"
+  toolchain="${toolchain%"${toolchain##*[![:space:]]}"}"
   # Strip the repository prefix, so we just get the suffix.
-  if [[ "$toolchain" =~ ^leanprover/lean4:(.*)$ ]]; then
+  if [[ "$toolchain" =~ ^leanprover/lean4:([^[:space:]]+)$ ]]; then
     toolchain_version="${BASH_REMATCH[1]}"
   else
-    echo "INFO: Not on leanprover/lean4 toolchain; not tagging commit: $commit"
+    echo "INFO: Not on leanprover/lean4 toolchain ($toolchain); not tagging commit: $commit"
     continue
   fi
 
   # Only add a tag for this toolchain if we haven't added it before.
-  if git ls-remote --tags --exit-code origin "$toolchain_version" >/dev/null; then
+  if git ls-remote --tags --exit-code origin "refs/tags/$toolchain_version" >/dev/null; then
     echo "INFO: Already have a tag for $toolchain_version; not tagging commit: $commit"
   else
+    echo "INFO: Tagging commit $commit as $toolchain_version."
     git config user.name "github-actions[bot]"
     git config user.email "github-actions[bot]@users.noreply.github.com"
     # If the tag does not exist, create and push the tag to remote
-    git tag -a "$toolchain_version" -m "Release $toolchain_version" $commit
-    git push origin  "$toolchain_version"
+    git tag -a "$toolchain_version" -m "Release $toolchain_version" "$commit"
+    git push origin "refs/tags/$toolchain_version"
 
     if [[ "$DO_RELEASE" == "true" ]]; then
-      gh release create "$toolchain_version" --title "$toolchain_version" --notes "Automated release for Lean version $toolchain_version"
+      gh release create "$toolchain_version" --verify-tag --title "$toolchain_version" --notes "Automated release for Lean version $toolchain_version"
     fi
   fi
 done
